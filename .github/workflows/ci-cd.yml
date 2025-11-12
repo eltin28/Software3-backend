@@ -24,7 +24,9 @@ jobs:
 
       # 3. Compilar el proyecto
       - name: Compilar proyecto con Maven
-        run: ./mvnw clean package -DskipTests
+        run: |
+          chmod +x ./mvnw
+          ./mvnw clean package -DskipTests
 
       # 4. Verificar que el JAR se generó
       - name: Verificar generación del JAR
