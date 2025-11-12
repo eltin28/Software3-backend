@@ -40,31 +40,37 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Agregar host conocido
-        run: ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
+      # 6. Configurar SSH para aceptar host automáticamente
+      - name: Configurar opciones SSH
+        run: |
+          mkdir -p ~/.ssh
+          cat >> ~/.ssh/config << 'EOF'
+          Host *
+            StrictHostKeyChecking accept-new
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+          chmod 600 ~/.ssh/config
 
-      # 6. Detener aplicación en el servidor
+      # 7. Detener aplicación en el servidor
       - name: Detener aplicación actual
         run: |
-          ssh -i ~/.ssh/rennechardon.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             echo "Deteniendo aplicación..."
             pkill -f app.jar || echo "No había proceso corriendo"
             sleep 2
             ps aux | grep java
           EOF
 
-      # 7. Transferir JAR al servidor
+      # 8. Transferir JAR al servidor
       - name: Transferir JAR a EC2
         run: |
-          scp -i ~/.ssh/rennechardon.pem target/app.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
+          scp target/app.jar ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:~/app/
           echo "JAR transferido exitosamente"
 
-      # 8. Iniciar aplicación en el servidor
+      # 9. Iniciar aplicación en el servidor
       - name: Iniciar aplicación
         run: |
-          ssh -i ~/.ssh/rennechardon.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             echo "Iniciando aplicación..."
             cd ~/app
             source ~/.env-app
@@ -76,10 +82,10 @@ jobs:
             tail -20 app.log
           EOF
 
-      # 9. Verificar deployment
+      # 10. Verificar deployment
       - name: Verificar deployment exitoso
         run: |
-          ssh -i ~/.ssh/rennechardon.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             if ps aux | grep -q "[a]pp.jar"; then
               echo "Aplicación desplegada exitosamente"
               exit 0
