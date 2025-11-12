@@ -41,7 +41,9 @@ jobs:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
       - name: Agregar host conocido
-        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        run: ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
 
       # 6. Detener aplicación en el servidor
       - name: Detener aplicación actual
